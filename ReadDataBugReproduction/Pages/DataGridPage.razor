@@ -1,0 +1,106 @@
+﻿@page "/datagrid"
+@using ReadDataBugReproduction.Models
+@using Blazored.LocalStorage
+@using ReadDataBugReproduction.States
+
+<Button Clicked="@SetState" Color="Color.Danger" Size="Size.Medium" Margin="Margin.Is2">
+    Set state in local storage and return.
+</Button>
+
+<DataGrid TItem="Employee"
+          TotalItems="EmployeesCount"
+          Data="Employees"
+          ReadData="@ReadData"
+          ShowPager="true"
+          PageSize="@PageSize"
+          CurrentPage="@Page">
+    <ChildContent>
+        <DataGridColumn TItem="Employee" Field="@nameof(Employee.Name)" Caption="Name" Direction="@NameColumnDirection"></DataGridColumn>
+    </ChildContent>
+    <LoadingTemplate>
+        Data is loading.
+    </LoadingTemplate>
+    <EmptyTemplate>
+        No data available.
+    </EmptyTemplate>
+</DataGrid>
+
+
+@code 
+{
+    public List<Employee> Employees { get; set; }
+    public int EmployeesCount { get; set; }
+    public int Page { get; set; } = 1;
+    public int PageSize { get; set; } = 5;
+    public List<DataGridColumnInfo> Columns { get; set; }
+    public SortDirection NameColumnDirection { get; set; }
+
+    [Inject]
+    public ILocalStorageService LocalStorage { get; set; }
+    [Inject]
+    public NavigationManager NavigationManager { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await LocalStorage.GetItemAsync<DataGridState>("state");
+
+        if (state is not null)
+        {
+            Page = state.Page;
+            PageSize = state.PageSize;
+
+            foreach (var columnState in state.ColumnStates)
+            {
+                _ = columnState.Field switch
+                {
+                    "Name" => NameColumnDirection = columnState.SortDirection,
+                    _ => _ = columnState.SortDirection
+                };
+            }
+        }
+
+        await LocalStorage.RemoveItemAsync("state");
+    }
+
+    public async Task ReadData(DataGridReadDataEventArgs<Employee> eventArgs)
+    {
+        Page = eventArgs.Page;
+        PageSize = eventArgs.PageSize;
+        Columns = eventArgs.Columns.ToList();
+
+        var direction = Columns
+            .Where(x => x.Field == "Name")
+            .SingleOrDefault()
+            .Direction;
+
+        var employees = await EmployeeRepository.GetEmployees(eventArgs.Page, eventArgs.PageSize, direction);
+        var count = await EmployeeRepository.GetTotalCount();
+
+        Employees = employees;
+        EmployeesCount = count;
+    }
+
+    public async Task SetState()
+    {
+        await LocalStorage.SetItemAsync("state", new DataGridState
+        {
+            Page = Page,
+            PageSize = PageSize,
+            ColumnStates = GetColumnStates().ToList()
+        });
+
+        NavigationManager.NavigateTo("/");
+    }
+
+    public IEnumerable<ColumnState> GetColumnStates()
+    {
+        foreach (var column in Columns)
+        {
+            yield return new ColumnState
+            {
+                Field = column.Field,
+                SortDirection = column.Direction
+            };
+        }
+    }
+}
