@@ -26,7 +26,7 @@
 </DataGrid>
 
 
-@code 
+@code
 {
     public List<Employee> Employees { get; set; }
     public int EmployeesCount { get; set; }
@@ -38,11 +38,14 @@
     [Inject]
     public ILocalStorageService LocalStorage { get; set; }
     [Inject]
+    public ISyncLocalStorageService SyncLocalStorage { get; set; }
+    [Inject]
     public NavigationManager NavigationManager { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
         var state = await LocalStorage.GetItemAsync<DataGridState>("state");
+        //var state = SyncLocalStorage.GetItem<DataGridState>("state"); //If you force OnInitialized to be synchronous inside, it works as expected.
 
         if (state is not null)
         {

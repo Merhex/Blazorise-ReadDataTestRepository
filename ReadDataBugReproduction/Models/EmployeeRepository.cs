@@ -11,21 +11,21 @@ namespace ReadDataBugReproduction.Models
         private static List<Employee> Employees =>
             new List<Employee>
             {
-                        new Employee { Name = "Employee 1" },
-                        new Employee { Name = "Employee 2" },
-                        new Employee { Name = "Employee 3" },
-                        new Employee { Name = "Employee 4" },
-                        new Employee { Name = "Employee 5" },
-                        new Employee { Name = "Employee 6" },
-                        new Employee { Name = "Employee 7" },
-                        new Employee { Name = "Employee 8" },
-                        new Employee { Name = "Employee 9" },
-                        new Employee { Name = "Employee 10" },
-                        new Employee { Name = "Employee 11" },
-                        new Employee { Name = "Employee 12" },
-                        new Employee { Name = "Employee 13" },
-                        new Employee { Name = "Employee 14" },
-                        new Employee { Name = "Employee 15" },
+                        new Employee { Name = "Mladen" },
+                        new Employee { Name = "Aaron" },
+                        new Employee { Name = "Tierry" },
+                        new Employee { Name = "Borus" },
+                        new Employee { Name = "Charlie" },
+                        new Employee { Name = "Eric" },
+                        new Employee { Name = "Dirk" },
+                        new Employee { Name = "Fennic" },
+                        new Employee { Name = "Roze" },
+                        new Employee { Name = "Walter" },
+                        new Employee { Name = "Damon" },
+                        new Employee { Name = "Benny" },
+                        new Employee { Name = "Zlatan" },
+                        new Employee { Name = "Amber" },
+                        new Employee { Name = "Ivan" },
             };
 
         public static async Task<List<Employee>> GetEmployees(int page = 1, int pageSize = 5, SortDirection sortDirection = SortDirection.None)
@@ -34,7 +34,16 @@ namespace ReadDataBugReproduction.Models
 
             await Task.Delay(50);
 
-            return Employees
+            var employees = Employees.AsQueryable();
+
+            _ = sortDirection switch
+            {
+                SortDirection.Ascending => employees = employees.OrderBy(x => x.Name),
+                SortDirection.Descending => employees = employees.OrderByDescending(x => x.Name),
+                _ => null
+            };
+
+            return employees
                 .Skip(pageSize * (page - 1))
                 .Take(pageSize)
                 .ToList();
